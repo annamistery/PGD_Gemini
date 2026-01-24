@@ -11,10 +11,10 @@ from pgd_bot import PGD_Person_Mod
 from chashka_points import chashka
 
 # Импорт нашего нового класса
-from model_preprocessor_1 import ModelProcessor
+from model_preprocessor import ModelProcessor
 
 # Настройки
-MODEL_ID = "qwen3-coder:480b-cloud"
+MODEL_ID = "gemini-1.5-flash"  # "qwen3-coder:480b-cloud"
 
 # Инициализируем класс в session_state
 if 'ai_manager' not in st.session_state:
