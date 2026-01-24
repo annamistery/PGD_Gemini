@@ -14,7 +14,7 @@ class ModelProcessor:
         genai.configure(api_key=self.api_key)
 
         # 3. Инициализируем модель
-        self.model = genai.GenerativeModel('gemini-1.5-flash')
+        self.model = genai.GenerativeModel('models/gemini-1.5-flash')
         self.prompt_path = "system_prompt.txt"
 
     def _load_system_instruction(self):
