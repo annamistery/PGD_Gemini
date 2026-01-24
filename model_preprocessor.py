@@ -6,7 +6,7 @@ import datetime
 
 class ModelProcessor:
     def __init__(self, model_name=None):
-        raw_key = st.secrets.get("GEMINI_API_KEY", "")
+        raw_key = st.secrets.get("GROQ_API_KEY", "")
         self.api_key = str(raw_key).replace('"', '').replace("'", "").strip()
 
         self.client = Groq(api_key=self.api_key)
