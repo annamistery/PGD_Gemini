@@ -6,16 +6,13 @@ import datetime
 
 class ModelProcessor:
     def __init__(self, model_name=None):
-        # Достаем ключ Groq из Secrets
-        # Используем то же имя для простоты
-        raw_key = st.secrets.get("GROQ_API_KEY", "")
+        raw_key = st.secrets.get("GEMINI_API_KEY", "")
         self.api_key = str(raw_key).replace('"', '').replace("'", "").strip()
 
-        # Инициализируем клиент Groq
         self.client = Groq(api_key=self.api_key)
 
-        # Выбираем мощную модель Llama 3
-        self.model_id = "llama3-70b-8192"
+        # Обновленный ID модели (актуально на 2026 год)
+        self.model_id = "llama-3.3-70b-versatile"
         self.prompt_path = "system_prompt.txt"
 
     def _load_system_instruction(self):
