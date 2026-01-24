@@ -20,11 +20,12 @@
 
 ## 🛠 Технологии
 
-- **Python 3.10+**
+- **Python 3.12+**
 
 - **Streamlit** (UI Framework)
 
 - **Google Gemini API** (LLM)
 
 - **Edge-TTS** (Voice Generation)
+
 
