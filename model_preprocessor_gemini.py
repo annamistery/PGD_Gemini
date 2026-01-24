@@ -3,19 +3,24 @@ import streamlit as st
 import google.generativeai as genai
 import datetime
 
-
 class ModelProcessor:
     def __init__(self, model_name=None):
-        # 1. Получаем ключ и сохраняем его именно в self.api_key
+        # 1. Получаем ключ
         raw_key = st.secrets.get("GEMINI_API_KEY", "")
         self.api_key = raw_key.replace('"', '').replace("'", "").strip()
 
         # 2. Настраиваем библиотеку Google
         genai.configure(api_key=self.api_key)
 
-        # 3. Инициализируем модель
-        self.model = genai.GenerativeModel('models/gemini-2.5-pro')
+        # 3. Инициализируем модель (используем ту, что подходит под твой ключ)
+        # Если gemini-2.5-pro не сработает, попробуй без префикса 'models/'
+        self.model_name = 'models/gemini-2.5-pro' 
+        self.model = genai.GenerativeModel(self.model_name)
         self.prompt_path = "system_prompt.txt"
+        
+        # Счетчик сообщений для лимита
+        if 'chat_counter' not in st.session_state:
+            st.session_state.chat_counter = 0
 
     def _load_system_instruction(self):
         if os.path.exists(self.prompt_path):
@@ -26,28 +31,31 @@ class ModelProcessor:
                 return "Ты профессиональный психолог и маркетолог."
         return "Ты профессиональный психолог и маркетолог."
 
-    def get_llm_response(self, user_data):
+    # Добавлен параметр is_chat=False для совместимости с app.py
+    def get_llm_response(self, user_data, is_chat=False):
+        # Проверка лимита в 15 запросов
+        if is_chat:
+            if st.session_state.chat_counter >= 15:
+                return "Лимит чата (15 сообщений) исчерпан. Пожалуйста, начните новый анализ."
+            st.session_state.chat_counter += 1
+
         system_instruction = self._load_system_instruction()
         full_prompt = f"{system_instruction}\n\nДанные для анализа:\n{user_data}"
 
         try:
-            # Теперь self.api_key существует и ошибки не будет
             if not self.api_key:
                 return "Ошибка: API ключ не найден в Secrets!"
 
             response = self.model.generate_content(full_prompt)
 
-            # Проверка на наличие текста в ответе
             if response and response.text:
                 return response.text
             else:
-                return "Модель вернула пустой ответ (возможно, сработали фильтры безопасности)."
+                return "Модель вернула пустой ответ. Возможно, сработали фильтры безопасности."
 
         except Exception as e:
             error_msg = str(e)
-            # Если проблема в регионе, мы увидим это сообщение
-            if "User location is not supported" in error_msg:
-                return "Ошибка: Сервер Streamlit находится в регионе, который не поддерживает Gemini."
+            # Если 404 повторится, попробуй изменить self.model_name в __init__
             return f"Детальная ошибка SDK: {error_msg}"
 
     def save_report(self, text, user_name):
