@@ -10,7 +10,7 @@ class ModelProcessor:
     def __init__(self, model_name="gemini-1.5-flash"):
         # Если в app.py передается что-то другое, мы все равно можем
         # принудительно использовать gemini или оставить переданное значение
-        self.api_key = st.secrets.get("GEMINI_API_KEY", ".streamlit")
+        self.api_key = st.secrets.get("GEMINI_API_KEY")
         self.model_name = model_name
         self.url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model_name}:generateContent?key={self.api_key}"
         self.prompt_path = "system_prompt.txt"
