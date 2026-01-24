@@ -62,7 +62,7 @@ if 'current_report' in st.session_state:
         st.rerun()
 
 # Настройки
-MODEL_ID = "qwen3-coder:480b-cloud"
+MODEL_ID = "gemini-1.5-flash"
 
 # Инициализируем класс в session_state
 if 'ai_manager' not in st.session_state:
