@@ -1,4 +1,4 @@
-\# 🧠 AI Psychological \& Marketing Analyzer
+\# 🧠 AI Psychological Analyzer
 
 
 
@@ -41,4 +41,5 @@
 &nbsp;  git clone \[https://github.com/your-username/your-repo-name.git](https://github.com/your-username/your-repo-name.git)
 
 &nbsp;  cd your-repo-name
+
 
