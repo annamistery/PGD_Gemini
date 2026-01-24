@@ -39,7 +39,7 @@ async def generate_voice(text, filename="speech.mp3"):
 
     # Очищаем текст и берем до 5000 символов для полной озвучки
     clean_text = clean_text_for_speech(text)
-    final_text = clean_text[:6000]
+    final_text = clean_text[:10000]
 
     if not final_text:
         return None
@@ -69,7 +69,7 @@ if 'chat_history' not in st.session_state:
 
 with st.sidebar:
     st.header("📋 Данные пользователя")
-    name = st.text_input("Имя", value="Анна")
+    name = st.text_input("Имя")
 
     # Дата рождения с возможностью очистки (крестик)
     dob = st.date_input("Дата рождения", value=None,
@@ -163,5 +163,6 @@ if st.session_state.ai_analysis:
                 st.write(response)
                 st.session_state.chat_history.append(
                     {"role": "assistant", "content": response})
+
 
 
