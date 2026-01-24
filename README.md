@@ -12,7 +12,7 @@
 
 \- \*\*Голосовой отчет\*\*: Озвучка результата с помощью технологии Microsoft Edge TTS.
 
-\- \*\*История\*\*: Автоматическое сохранение и удобный просмотр отчетов в боковой панели.
+\- \*\*Загрузка\*\*: Возможность скачивания отчётов.
 
 \- \*\*Облачный деплой\*\*: Полная поддержка работы в Streamlit Cloud.
 
@@ -41,5 +41,6 @@
 &nbsp;  git clone \[https://github.com/your-username/your-repo-name.git](https://github.com/your-username/your-repo-name.git)
 
 &nbsp;  cd your-repo-name
+
 
 
