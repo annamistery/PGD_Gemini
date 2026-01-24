@@ -13,7 +13,7 @@ from pgd_bot import PGD_Person_Mod
 from chashka_points import chashka
 
 # Импорт нашего нового класса
-from model_preprocessor_1 import ModelProcessor
+from model_preprocessor import ModelProcessor
 
 # --- 1. УЛУЧШЕННЫЙ ДИЗАЙН (Вставь в начало после импортов) ---
 st.set_page_config(page_title="AI Psych Analysis",
