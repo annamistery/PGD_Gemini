@@ -5,20 +5,20 @@ import datetime
 
 class ModelProcessor:
     def __init__(self, model_name=None):
-        # 1. Получаем ключ
+        # 1. Загрузка ключа
         raw_key = st.secrets.get("GEMINI_API_KEY", "")
         self.api_key = raw_key.replace('"', '').replace("'", "").strip()
 
-        # 2. Настраиваем библиотеку Google
+        # 2. Инициализация Google SDK
         genai.configure(api_key=self.api_key)
 
-        # 3. Инициализируем модель (используем ту, что подходит под твой ключ)
-        # Если gemini-2.5-pro не сработает, попробуй без префикса 'models/'
-        self.model_name = 'models/gemini-2.5-pro' 
+        # 3. Установка вашей модели (gemini-2.5-pro)
+        # Если возникнет 404, попробуйте убрать префикс 'models/'
+        self.model_name = 'models/gemini-2.5-pro'
         self.model = genai.GenerativeModel(self.model_name)
         self.prompt_path = "system_prompt.txt"
         
-        # Счетчик сообщений для лимита
+        # Счетчик для ограничения чата до 15 сообщений
         if 'chat_counter' not in st.session_state:
             st.session_state.chat_counter = 0
 
@@ -31,32 +31,31 @@ class ModelProcessor:
                 return "Ты профессиональный психолог и маркетолог."
         return "Ты профессиональный психолог и маркетолог."
 
-    # Добавлен параметр is_chat=False для совместимости с app.py
+    # ИСПРАВЛЕНИЕ: Добавлен параметр is_chat=False
     def get_llm_response(self, user_data, is_chat=False):
-        # Проверка лимита в 15 запросов
+        # Проверка лимита запросов
         if is_chat:
             if st.session_state.chat_counter >= 15:
-                return "Лимит чата (15 сообщений) исчерпан. Пожалуйста, начните новый анализ."
+                return "Извините, лимит в 15 сообщений для этого чата исчерпан."
             st.session_state.chat_counter += 1
 
         system_instruction = self._load_system_instruction()
-        full_prompt = f"{system_instruction}\n\nДанные для анализа:\n{user_data}"
+        full_prompt = f"{system_instruction}\n\nКонтекст запроса:\n{user_data}"
 
         try:
             if not self.api_key:
-                return "Ошибка: API ключ не найден в Secrets!"
+                return "Ошибка: API ключ не найден в настройках (Secrets)."
 
+            # Запрос к Gemini 2.5 Pro
             response = self.model.generate_content(full_prompt)
 
             if response and response.text:
                 return response.text
             else:
-                return "Модель вернула пустой ответ. Возможно, сработали фильтры безопасности."
+                return "Модель не смогла сгенерировать текст. Возможно, сработали фильтры безопасности."
 
         except Exception as e:
-            error_msg = str(e)
-            # Если 404 повторится, попробуй изменить self.model_name в __init__
-            return f"Детальная ошибка SDK: {error_msg}"
+            return f"Детальная ошибка SDK: {str(e)}"
 
     def save_report(self, text, user_name):
         if not os.path.exists("reports"):
