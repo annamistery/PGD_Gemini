@@ -1,56 +1,47 @@
 import os
 import streamlit as st
-import requests
+from groq import Groq
 import datetime
 
 
 class ModelProcessor:
     def __init__(self, model_name=None):
-        # 1. Достаем ключ и очищаем его от всего лишнего
-        raw_key = st.secrets.get("GEMINI_API_KEY", "")
+        # Достаем ключ Groq из Secrets
+        # Используем то же имя для простоты
+        raw_key = st.secrets.get("GROQ_API_KEY", "")
         self.api_key = str(raw_key).replace('"', '').replace("'", "").strip()
 
-        # 2. Используем чистый ID без префиксов
-        self.model_id = "gemini-1.5-flash"
+        # Инициализируем клиент Groq
+        self.client = Groq(api_key=self.api_key)
 
-        # 3. ВАЖНО: Переходим на стабильную версию v1 (не v1beta!)
-        self.url = f"https://generativelanguage.googleapis.com/v1/models/{self.model_id}:generateContent?key={self.api_key}"
+        # Выбираем мощную модель Llama 3
+        self.model_id = "llama3-70b-8192"
         self.prompt_path = "system_prompt.txt"
 
     def _load_system_instruction(self):
         if os.path.exists(self.prompt_path):
             with open(self.prompt_path, "r", encoding="utf-8") as f:
                 return f.read().strip()
-        return "Ты эксперт-психолог и маркетолог."
+        return "Ты профессиональный психолог и маркетолог."
 
     def get_llm_response(self, user_data):
         system_instruction = self._load_system_instruction()
 
-        # Прямая структура JSON для Google API
-        payload = {
-            "contents": [{
-                "parts": [{
-                    "text": f"{system_instruction}\n\nДАННЫЕ:\n{user_data}"
-                }]
-            }]
-        }
-
-        headers = {'Content-Type': 'application/json'}
-
         try:
-            # Делаем обычный POST запрос
-            response = requests.post(
-                self.url, json=payload, headers=headers, timeout=30)
-
-            if response.status_code == 200:
-                data = response.json()
-                return data['candidates'][0]['content']['parts'][0]['text']
-            else:
-                # Выводим тело ответа, чтобы понять, что не так
-                return f"Ошибка сервера ({response.status_code}): {response.text}"
+            # Запрос к Groq Cloud
+            completion = self.client.chat.completions.create(
+                model=self.model_id,
+                messages=[
+                    {"role": "system", "content": system_instruction},
+                    {"role": "user", "content": f"Проанализируй данные: {user_data}"}
+                ],
+                temperature=0.7,
+                max_tokens=2048
+            )
+            return completion.choices[0].message.content
 
         except Exception as e:
-            return f"Ошибка сети: {str(e)}"
+            return f"Ошибка Groq API: {str(e)}"
 
     def save_report(self, text, user_name):
         if not os.path.exists("reports"):
