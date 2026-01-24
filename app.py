@@ -1,6 +1,4 @@
 import streamlit as st
-import os
-import streamlit as st
 import asyncio
 import edge_tts
 import os
@@ -13,56 +11,10 @@ from pgd_bot import PGD_Person_Mod
 from chashka_points import chashka
 
 # Импорт нашего нового класса
-from model_preprocessor import ModelProcessor
-
-# --- 1. УЛУЧШЕННЫЙ ДИЗАЙН (Вставь в начало после импортов) ---
-st.set_page_config(page_title="AI Psych Analysis",
-                   page_icon="🧠", layout="wide")
-
-st.markdown("""
-    <style>
-    .main {
-        background-color: #f5f7f9;
-    }
-    .stButton>button {
-        width: 100%;
-        border-radius: 10px;
-        height: 3em;
-        background-color: #4CAF50;
-        color: white;
-    }
-    .report-card {
-        padding: 20px;
-        border-radius: 15px;
-        background-color: white;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
-# --- 2. БОКОВАЯ ПАНЕЛЬ С ИСТОРИЕЙ (Добавь после создания ai_manager) ---
-with st.sidebar:
-    st.title("📂 История отчетов")
-    if os.path.exists("reports"):
-        reports = sorted(os.listdir("reports"), reverse=True)
-        for report in reports:
-            if report.endswith(".txt"):
-                if st.button(f"📄 {report[:20]}...", key=report):
-                    with open(f"reports/{report}", "r", encoding="utf-8") as f:
-                        st.session_state.current_report = f.read()
-    else:
-        st.info("Отчетов пока нет")
-
-# --- 3. ОТОБРАЖЕНИЕ ВЫБРАННОГО ОТЧЕТА ---
-if 'current_report' in st.session_state:
-    st.subheader("Просмотр архивного отчета")
-    st.text_area("", st.session_state.current_report, height=200)
-    if st.button("Закрыть просмотр"):
-        del st.session_state.current_report
-        st.rerun()
+from model_preprocessor_1 import ModelProcessor
 
 # Настройки
-MODEL_ID = "gemini-1.5-flash"
+MODEL_ID = "qwen3-coder:480b-cloud"
 
 # Инициализируем класс в session_state
 if 'ai_manager' not in st.session_state:
@@ -149,8 +101,7 @@ if process_btn:
             progress_bar.progress(40)
 
             # 3. Нейросеть
-            st.write(
-                f"🧠 Сервис формирует отчет для пользователя по имени {name}...")
+            st.write(f"🧠 Сервис формирует отчет для {name}...")
             # Мы добавляем имя пользователя прямо в начало данных, чтобы ИИ его увидел
             # В блоке обработки (кнопка):
             data_with_context = f"ИМЯ ПОЛЬЗОВАТЕЛЯ: {name}\nДАННЫЕ ДИАГНОСТИКИ:\n{raw_description}"
