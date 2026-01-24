@@ -28,12 +28,23 @@ class ModelProcessor:
         full_prompt = f"{system_instruction}\n\nДанные для анализа:\n{user_data}"
 
         try:
-            # Официальный метод генерации
+            # Проверка: видит ли приложение ключ (выведем первые 4 символа для безопасности)
+            if not self.api_key:
+                return "Ошибка: API ключ не найден в Secrets!"
+
             response = self.model.generate_content(full_prompt)
+
+            # Проверка безопасности (Safety filters)
+            if response.candidates[0].finish_reason == 3:
+                return "Ошибка: Ответ заблокирован фильтрами безопасности Google."
+
             return response.text
         except Exception as e:
-            # Если будет ошибка, мы увидим её детально
-            return f"Ошибка Gemini SDK: {str(e)}"
+            # Если это ошибка региона, мы это увидим здесь
+            error_msg = str(e)
+            if "User location is not supported" in error_msg:
+                return "Ошибка: Сервер Streamlit находится в регионе, где Gemini API недоступен."
+            return f"Детальная ошибка SDK: {error_msg}"
 
     def save_report(self, text, user_name):
         if not os.path.exists("reports"):
