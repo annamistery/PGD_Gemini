@@ -18,30 +18,13 @@
 
 
 
-\## 🛠 Технологии
+## 🛠 Технологии
 
-\- \*\*Python 3.10+\*\*
+- **Python 3.10+**
 
-\- \*\*Streamlit\*\* (UI Framework)
+- **Streamlit** (UI Framework)
 
-\- \*\*Google Gemini API\*\* (LLM)
+- **Google Gemini API** (LLM)
 
-\- \*\*Edge-TTS\*\* (Voice Generation)
-
-
-
-\## 📦 Быстрый старт (Локально)
-
-
-
-1\. Клонируйте репозиторий:
-
-&nbsp;  ```bash
-
-&nbsp;  git clone \[https://github.com/your-username/your-repo-name.git](https://github.com/your-username/your-repo-name.git)
-
-&nbsp;  cd your-repo-name
-
-
-
+- **Edge-TTS** (Voice Generation)
 
