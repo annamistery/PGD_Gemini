@@ -14,7 +14,7 @@ from chashka_points import chashka
 from model_preprocessor import ModelProcessor
 
 # Настройки
-MODEL_ID = "gemini-1.5-flash"  # "qwen3-coder:480b-cloud"
+MODEL_ID = "gemini-2.5-pro"  # "qwen3-coder:480b-cloud"
 
 # Инициализируем класс в session_state
 if 'ai_manager' not in st.session_state:
@@ -163,3 +163,4 @@ if st.session_state.ai_analysis:
                 st.write(response)
                 st.session_state.chat_history.append(
                     {"role": "assistant", "content": response})
+
