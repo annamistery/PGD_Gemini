@@ -1,54 +1,56 @@
 import os
 import streamlit as st
-import google.generativeai as genai
+import requests
 import datetime
 
 
 class ModelProcessor:
     def __init__(self, model_name=None):
-        # 1. Получаем ключ и сохраняем его именно в self.api_key
+        # 1. Достаем ключ и очищаем его от всего лишнего
         raw_key = st.secrets.get("GEMINI_API_KEY", "")
-        self.api_key = raw_key.replace('"', '').replace("'", "").strip()
+        self.api_key = str(raw_key).replace('"', '').replace("'", "").strip()
 
-        # 2. Настраиваем библиотеку Google
-        genai.configure(api_key=self.api_key)
+        # 2. Используем чистый ID без префиксов
+        self.model_id = "gemini-1.5-flash"
 
-        # 3. Инициализируем модель
-        self.model = genai.GenerativeModel('models/gemini-1.5-flash')
+        # 3. ВАЖНО: Переходим на стабильную версию v1 (не v1beta!)
+        self.url = f"https://generativelanguage.googleapis.com/v1/models/{self.model_id}:generateContent?key={self.api_key}"
         self.prompt_path = "system_prompt.txt"
 
     def _load_system_instruction(self):
         if os.path.exists(self.prompt_path):
-            try:
-                with open(self.prompt_path, "r", encoding="utf-8") as f:
-                    return f.read().strip()
-            except:
-                return "Ты профессиональный психолог и маркетолог."
-        return "Ты профессиональный психолог и маркетолог."
+            with open(self.prompt_path, "r", encoding="utf-8") as f:
+                return f.read().strip()
+        return "Ты эксперт-психолог и маркетолог."
 
     def get_llm_response(self, user_data):
         system_instruction = self._load_system_instruction()
-        full_prompt = f"{system_instruction}\n\nДанные для анализа:\n{user_data}"
+
+        # Прямая структура JSON для Google API
+        payload = {
+            "contents": [{
+                "parts": [{
+                    "text": f"{system_instruction}\n\nДАННЫЕ:\n{user_data}"
+                }]
+            }]
+        }
+
+        headers = {'Content-Type': 'application/json'}
 
         try:
-            # Теперь self.api_key существует и ошибки не будет
-            if not self.api_key:
-                return "Ошибка: API ключ не найден в Secrets!"
+            # Делаем обычный POST запрос
+            response = requests.post(
+                self.url, json=payload, headers=headers, timeout=30)
 
-            response = self.model.generate_content(full_prompt)
-
-            # Проверка на наличие текста в ответе
-            if response and response.text:
-                return response.text
+            if response.status_code == 200:
+                data = response.json()
+                return data['candidates'][0]['content']['parts'][0]['text']
             else:
-                return "Модель вернула пустой ответ (возможно, сработали фильтры безопасности)."
+                # Выводим тело ответа, чтобы понять, что не так
+                return f"Ошибка сервера ({response.status_code}): {response.text}"
 
         except Exception as e:
-            error_msg = str(e)
-            # Если проблема в регионе, мы увидим это сообщение
-            if "User location is not supported" in error_msg:
-                return "Ошибка: Сервер Streamlit находится в регионе, который не поддерживает Gemini."
-            return f"Детальная ошибка SDK: {error_msg}"
+            return f"Ошибка сети: {str(e)}"
 
     def save_report(self, text, user_name):
         if not os.path.exists("reports"):
