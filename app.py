@@ -11,7 +11,7 @@ from pgd_bot import PGD_Person_Mod
 from chashka_points import chashka
 
 # Импорт нашего нового класса
-from model_preprocessor import ModelProcessor
+from model_preprocessor_gemini import ModelProcessor
 
 # Настройки
 MODEL_ID = "gemini-2.5-pro"  # "qwen3-coder:480b-cloud"
@@ -163,4 +163,5 @@ if st.session_state.ai_analysis:
                 st.write(response)
                 st.session_state.chat_history.append(
                     {"role": "assistant", "content": response})
+
 
