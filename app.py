@@ -3,14 +3,13 @@ import asyncio
 import edge_tts
 import os
 import re
+import time
 from datetime import datetime
 
-# Импорт твоих модулей
+# Остальные твои импорты...
 from personality_preprocessor import PersonalityCupProcessor
 from pgd_bot import PGD_Person_Mod
 from chashka_points import chashka
-
-# Импорт нашего нового класса
 from model_preprocessor_gemini import ModelProcessor
 
 # Настройки
