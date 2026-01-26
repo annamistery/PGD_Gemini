@@ -50,8 +50,10 @@ async def generate_voice(text):
     # Удаляем старые mp3 в папке, чтобы не копились
     for f in os.listdir():
         if f.startswith("speech_") and f.endswith(".mp3"):
-            try: os.remove(f)
-            except: pass
+            try:
+                os.remove(f)
+            except:
+                pass
 
     communicate = edge_tts.Communicate(final_text, "ru-RU-SvetlanaNeural")
     await communicate.save(filename)
@@ -153,6 +155,7 @@ if st.session_state.ai_analysis:
             data=st.session_state.ai_analysis.encode('utf-8-sig'),
             file_name=f"Result_{name}_{datetime.now().strftime('%d%m%Y')}.txt",
             mime="text/plain"
+        )
 
     st.divider()
 
@@ -170,8 +173,8 @@ if st.session_state.ai_analysis:
 
         with st.chat_message("assistant"):
             with st.spinner("Анализирую..."):
-                chat_context=f"Это диагностика пользователя {name}: {st.session_state.ai_analysis}. Ответь на вопрос: {query}"
-                response=st.session_state.ai_manager.get_llm_response(
+                chat_context = f"Это диагностика пользователя {name}: {st.session_state.ai_analysis}. Ответь на вопрос: {query}"
+                response = st.session_state.ai_manager.get_llm_response(
                     chat_context, is_chat=True)
                 st.write(response)
                 st.session_state.chat_history.append(
