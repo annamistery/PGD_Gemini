@@ -32,17 +32,26 @@ def clean_text_for_speech(text):
     return text
 
 
-async def generate_voice(text, filename="speech.mp3"):
-    """Генерация аудиофайла через Microsoft Edge TTS"""
-    if os.path.exists(filename):
-        os.remove(filename)
-
-    # Очищаем текст и берем до 5000 символов для полной озвучки
+async def generate_voice(text):
+    """Генерация аудиофайла через Microsoft Edge TTS с защитой от кэша"""
+    # Очищаем текст
     clean_text = clean_text_for_speech(text)
-    final_text = clean_text[:10000]
+
+    # Для стабильности берем первые 5000-7000 символов (это ~10 минут речи)
+    # Если нужно больше, текст надо бить на части.
+    final_text = clean_text[:7000]
 
     if not final_text:
         return None
+
+    # Создаем уникальное имя для каждой сессии, чтобы плеер не кэшировал старое
+    filename = f"speech_{int(time.time())}.mp3"
+
+    # Удаляем старые mp3 в папке, чтобы не копились
+    for f in os.listdir():
+        if f.startswith("speech_") and f.endswith(".mp3"):
+            try: os.remove(f)
+            except: pass
 
     communicate = edge_tts.Communicate(final_text, "ru-RU-SvetlanaNeural")
     await communicate.save(filename)
@@ -111,13 +120,17 @@ if process_btn:
             progress_bar.progress(80)
 
             # 4. Голос и сохранение (Озвучиваем ПОЛНЫЙ текст до 5к символов)
-            st.write("🎙 Синтез речи и сохранение файла...")
+
+            st.write("🎙 Синтез речи и подготовка файла...")
             st.session_state.ai_manager.save_report(ai_text, name)
-            asyncio.run(generate_voice(ai_text))
+            # Сохраняем путь к аудио в состояние сессии
+            audio_path = asyncio.run(generate_voice(ai_text))
+            st.session_state.audio_file = audio_path  # Запоминаем файл
 
             progress_bar.progress(100)
             status.update(label="✅ Обработка успешно завершена!",
                           state="complete")
+
         st.balloons()
 
 # --- ВЫВОД РЕЗУЛЬТАТОВ ---
@@ -136,10 +149,10 @@ if st.session_state.ai_analysis:
 
         st.download_button(
             label="💾 Скачать текстовый отчет",
-            data=st.session_state.ai_analysis,
+            # Добавляем .encode('utf-8-sig') — это вылечит "кракозябры"
+            data=st.session_state.ai_analysis.encode('utf-8-sig'),
             file_name=f"Result_{name}_{datetime.now().strftime('%d%m%Y')}.txt",
             mime="text/plain"
-        )
 
     st.divider()
 
@@ -157,12 +170,9 @@ if st.session_state.ai_analysis:
 
         with st.chat_message("assistant"):
             with st.spinner("Анализирую..."):
-                chat_context = f"Это диагностика пользователя {name}: {st.session_state.ai_analysis}. Ответь на вопрос: {query}"
-                response = st.session_state.ai_manager.get_llm_response(
+                chat_context=f"Это диагностика пользователя {name}: {st.session_state.ai_analysis}. Ответь на вопрос: {query}"
+                response=st.session_state.ai_manager.get_llm_response(
                     chat_context, is_chat=True)
                 st.write(response)
                 st.session_state.chat_history.append(
                     {"role": "assistant", "content": response})
-
-
-
