@@ -23,8 +23,8 @@ class ModelProcessor:
                 with open(self.prompt_path, "r", encoding="utf-8") as f:
                     return f.read().strip()
             except:
-                return "Ты профессиональный психолог и маркетолог."
-        return "Ты профессиональный психолог и маркетолог."
+                return "Ты профессиональный психолог-консультант"
+        return "Ты профессиональный психолог-консультант"
 
     def get_llm_response(self, user_data):
         system_instruction = self._load_system_instruction()
@@ -58,3 +58,4 @@ class ModelProcessor:
         with open(filename, "w", encoding="utf-8-sig") as f:
             f.write(text)
         return filename
+
