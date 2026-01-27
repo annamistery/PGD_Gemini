@@ -29,25 +29,40 @@ def clean_text_for_speech(text):
 
 
 async def generate_voice(text):
-    """Генерация аудио с защитой от кэширования мобильных браузеров"""
+    """Генерация аудио с автоматическим дроблением длинного текста"""
     clean_text = clean_text_for_speech(text)
-    final_text = clean_text[:10000]
+    
+    # Разбиваем текст на куски по 3000 символов (безопасный порог для API)
+    chunk_size = 3000
+    chunks = [clean_text[i:i + chunk_size] for i in range(0, len(clean_text), chunk_size)]
+    
+    combined_filename = f"speech_{int(time.time())}.mp3"
+    temp_files = []
 
-    if not final_text:
+    try:
+        for i, chunk in enumerate(chunks):
+            temp_name = f"temp_{i}_{combined_filename}"
+            communicate = edge_tts.Communicate(chunk, "ru-RU-SvetlanaNeural")
+            await communicate.save(temp_name)
+            temp_files.append(temp_name)
+
+        # Склеиваем файлы (просто записываем их данные в один файл)
+        with open(combined_filename, "wb") as final_file:
+            for temp_name in temp_files:
+                with open(temp_name, "rb") as f:
+                    final_file.write(f.read())
+                os.remove(temp_name) # Удаляем временный кусок
+
+        # Очистка старых сессий
+        for f in os.listdir():
+            if f.startswith("speech_") and f.endswith(".mp3") and f != combined_filename:
+                try: os.remove(f)
+                except: pass
+
+        return combined_filename
+    except Exception as e:
+        st.error(f"Ошибка при сборке аудио: {e}")
         return None
-
-    # Уникальное имя файла критически важно для мобильных (они жестко кэшируют аудио)
-    filename = f"speech_{int(time.time())}.mp3"
-
-    # Очистка старых файлов, чтобы не забивать память на Streamlit Cloud
-    for f in os.listdir():
-        if f.startswith("speech_") and f.endswith(".mp3"):
-            try: os.remove(f)
-            except: pass
-
-    communicate = edge_tts.Communicate(final_text, "ru-RU-SvetlanaNeural")
-    await communicate.save(filename)
-    return filename
 
 # --- ИНТЕРФЕЙС ---
 st.set_page_config(page_title="PGD Диагностика", layout="wide")
@@ -146,5 +161,6 @@ if st.session_state.ai_analysis:
                 st.write(response)
                 st.session_state.chat_history.append(
                     {"role": "assistant", "content": response})
+
 
 
