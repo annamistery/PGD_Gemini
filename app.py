@@ -31,7 +31,7 @@ def clean_text_for_speech(text):
 async def generate_voice(text):
     """Генерация аудио с защитой от кэширования мобильных браузеров"""
     clean_text = clean_text_for_speech(text)
-    final_text = clean_text[:7000]
+    final_text = clean_text[:10000]
 
     if not final_text:
         return None
@@ -146,4 +146,5 @@ if st.session_state.ai_analysis:
                 st.write(response)
                 st.session_state.chat_history.append(
                     {"role": "assistant", "content": response})
+
 
