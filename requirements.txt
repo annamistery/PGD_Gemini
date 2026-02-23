@@ -3,7 +3,5 @@ requests
 edge-tts
 streamlit
 google-generativeai
-fpdf2
-gspread
-groq
 python-dotenv
+
