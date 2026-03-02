@@ -41,24 +41,50 @@ def clean_text_for_speech(text: str) -> str:
 
 
 async def generate_voice(text: str):
-    """Генерация аудиофайла через Microsoft Edge TTS."""
+    """Генерация ПОЛНОГО аудиофайла путем разбивки на части."""
     clean_text = clean_text_for_speech(text)
-    final_text = clean_text[:7000]
-    if not final_text:
+    if not clean_text:
         return None
 
-    filename = f"speech_{int(time.time())}.mp3"
+    # Разрезаем текст на куски по ~3000 символов, стараясь не рвать предложения
+    # Самый простой способ — бить по абзацам
+    paragraphs = clean_text.split('\n')
+    chunks = []
+    current_chunk = ""
 
+    for p in paragraphs:
+        if len(current_chunk) + len(p) < 3000:
+            current_chunk += p + "\n"
+        else:
+            chunks.append(current_chunk)
+            current_chunk = p + "\n"
+    chunks.append(current_chunk)
+
+    combined_filename = f"full_speech_{int(time.time())}.mp3"
+
+    # Очистка старых файлов
     for f in os.listdir():
-        if f.startswith("speech_") and f.endswith(".mp3"):
-            try:
-                os.remove(f)
-            except:
-                pass
+        if f.startswith("full_speech_") and f.endswith(".mp3"):
+            try: os.remove(f)
+            except: pass
 
-    communicate = edge_tts.Communicate(final_text, "ru-RU-SvetlanaNeural")
-    await communicate.save(filename)
-    return filename
+    # Генерируем части и склеиваем их в один файл
+    with open(combined_filename, "wb") as master_file:
+        for i, chunk in enumerate(chunks):
+            if not chunk.strip(): continue
+            
+            temp_file = f"temp_{i}.mp3"
+            communicate = edge_tts.Communicate(chunk, "ru-RU-SvetlanaNeural")
+            await communicate.save(temp_file)
+            
+            # Читаем временный файл и дописываем в основной
+            with open(temp_file, "rb") as f:
+                master_file.write(f.read())
+            
+            # Удаляем временный файл
+            os.remove(temp_file)
+
+    return combined_filename
 
 # ==== UI ====
 st.set_page_config(page_title="PGD Диагностика", layout="wide")
@@ -224,5 +250,6 @@ if st.session_state.ai_analysis:
                 st.session_state.chat_history.append({"role": "assistant", "content": full_chat_response})
             except Exception as e:
                 st.error(f"Ошибка чата: {e}")
+
 
 
