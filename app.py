@@ -22,6 +22,18 @@ GEMINI_MODEL_ID = "gemini-2.5-pro"
 if "ai_manager" not in st.session_state:
     st.session_state.ai_manager = ModelProcessor(model_name=GEMINI_MODEL_ID)
 
+# ==== UI ====
+st.set_page_config(page_title="PGD Диагностика", layout="wide")
+st.title("🌟 Карта личности (Gemini Edition)")
+
+with st.expander("📖 Инструкция по применению", expanded=False):
+    st.write("""
+    1. **Введите данные**: Имя, дату рождения и пол.
+    2. **Анализ**: Нажмите 'Запустить полный анализ'.
+    3. **Результат**: Получите текстовый и аудио-разбор от Gemini.
+    4. **Чат**: Задавайте уточняющие вопросы внизу.
+    """)
+
 # ==== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====
 
 st.markdown("""
@@ -217,3 +229,4 @@ if st.session_state.ai_analysis:
                 st.session_state.chat_history.append({"role": "assistant", "content": full_chat_response})
             except Exception as e:
                 st.error(f"Ошибка чата: {e}")
+
