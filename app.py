@@ -1,9 +1,3 @@
-# app.py
-# ⬅️ Теперь импортируем обновленный класс для Gemini
-from model_gemini import ModelProcessor
-from chashka_points import chashka
-from pgd_bot import PGD_Person_Mod
-from personality_preprocessor import PersonalityCupProcessor
 import streamlit as st
 import asyncio
 import edge_tts
@@ -13,14 +7,18 @@ import time
 from datetime import datetime
 import logging
 
+# Импортируем твои модули
 from model_gemini import ModelProcessor
+from chashka_points import chashka
+from pgd_bot import PGD_Person_Mod
+from personality_preprocessor import PersonalityCupProcessor
 
 # === ЛОГИРОВАНИЕ ===
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)  # Импортируем новый файл
-...
-GEMINI_MODEL_ID = "gemini-2.5-pro"  # Или "gemini-1.5-flash" для скорости
-...
+logger = logging.getLogger(__name__)
+
+GEMINI_MODEL_ID = "gemini-2.5-pro"
+
 if "ai_manager" not in st.session_state:
     st.session_state.ai_manager = ModelProcessor(model_name=GEMINI_MODEL_ID)
 
@@ -93,12 +91,31 @@ with st.sidebar:
         "Дата рождения",
         value=None,
         min_value=datetime(1900, 1, 1),
+        max_value=datetime.now(),
         format="DD.MM.YYYY",
     )
     gender = st.radio("Пол", ("Женский", "Мужской"), horizontal=True)
 
-    process_btn = st.button("🚀 Запустить полный анализ",
-                            use_container_width=True)
+    process_btn = st.button("🚀 Запустить полный анализ", use_container_width=True)
+
+# ==== ФУНКЦИЯ ОТРИСОВКИ РЕЗУЛЬТАТОВ (чтобы не дублировать код) ====
+def display_results(analysis_text, audio_path, user_name):
+    col1, col2 = st.columns([2, 1])
+    with col1:
+        st.subheader("📄 Ваш персональный анализ")
+        st.markdown(analysis_text)
+    with col2:
+        st.subheader("📥 Результаты")
+        if audio_path and os.path.exists(audio_path):
+            st.audio(audio_path)
+        
+        st.download_button(
+            label="💾 Скачать отчет",
+            data=analysis_text.encode("utf-8-sig"),
+            file_name=f"PGD_Result_{user_name}.txt",
+            mime="text/plain",
+            use_container_width=True
+        )
 
 # ==== Основная логика анализа ====
 if process_btn:
@@ -106,94 +123,71 @@ if process_btn:
         st.error("Пожалуйста, введите имя и дату рождения!")
     else:
         progress_bar = st.progress(0)
-        status_placeholder = st.empty()
+        status_info = st.empty()
+        
+        # 1. PGD расчёты
+        status_info.write("📐 Расчет параметров матрицы...")
+        date_str = dob.strftime("%d.%m.%Y")
+        sex_char = "Ж" if gender == "Женский" else "М"
+        person = PGD_Person_Mod(name, date_str, sex_char)
+        main_data = person.calculate_points()
+        progress_bar.progress(20)
 
-        with status_placeholder.container():
-            st.write("📐 Расчет параметров матрицы...")
-            progress_bar.progress(10)
+        # 2. Препроцессор данных
+        status_info.write("🔍 Сбор текстовых описаний...")
+        processor = PersonalityCupProcessor(main_data, {}, gender=sex_char)
+        raw_description = str(processor.result(chashka))
+        progress_bar.progress(40)
 
-            # 1. PGD расчёты
-            date_str = dob.strftime("%d.%m.%Y")
-            sex_char = "Ж" if gender == "Женский" else "М"
-            person = PGD_Person_Mod(name, date_str, sex_char)
-            main_data = person.calculate_points()
+        # 3. Модель Gemini
+        status_info.write(f"🧠 Gemini формирует глубокий отчет для {name}...")
+        data_with_context = (
+            f"ИМЯ ПОЛЬЗОВАТЕЛЯ: {name}\n"
+            f"ДАТА РОЖДЕНИЯ: {date_str}\n"
+            f"ПОЛ: {gender}\n\n"
+            f"ДАННЫЕ ДИАГНОСТИКИ (PGD):\n{raw_description}"
+        )
 
-            progress_bar.progress(20)
-
-            # 2. Препроцессор данных
-            st.write("🔍 Сбор текстовых описаний...")
-            processor = PersonalityCupProcessor(main_data, {}, gender=sex_char)
-            raw_description = str(processor.result(chashka))
-            progress_bar.progress(30)
-
-            # 3. Модель Gemini — формируем итоговый текст
-            st.write(f"🧠 Gemini формирует глубокий отчет для {name}...")
-            data_with_context = (
-                f"ИМЯ ПОЛЬЗОВАТЕЛЯ: {name}\n"
-                f"ДАТА РОЖДЕНИЯ: {date_str}\n"
-                f"ПОЛ: {gender}\n\n"
-                f"ДАННЫЕ ДИАГНОСТИКИ (PGD):\n{raw_description}"
-            )
-
-            # === СТРИМИНГ ОТВЕТА (АНАЛИЗ) ===
-            try:
-                response_placeholder = st.empty()
-                full_response = ""
-
-                # Передаем is_chat=False для использования полного системного промпта
-                for chunk in st.session_state.ai_manager.get_streaming_response(
-                    data_with_context, is_chat=False
-                ):
-                    full_response += chunk
-                    response_placeholder.markdown(full_response + " ")
-
-                response_placeholder.markdown(full_response)
-                st.session_state.ai_analysis = full_response
-
-            except Exception as e:
-                logger.error(f"Ошибка Gemini при анализе: {e}")
-                st.error(f"Произошла техническая ошибка: {e}")
-
+        try:
+            # Стриминг в реальном времени
+            response_placeholder = st.empty()
+            full_response = ""
+            for chunk in st.session_state.ai_manager.get_streaming_response(data_with_context, is_chat=False):
+                full_response += chunk
+                response_placeholder.markdown(full_response + "▌")
+            
+            response_placeholder.empty() # Убираем временный плейсхолдер перед финальным выводом
+            st.session_state.ai_analysis = full_response
             progress_bar.progress(80)
 
-            # 4. Голос + сохранение
-            st.write("🎙 Синтез речи...")
-            try:
-                st.session_state.ai_manager.save_report(
-                    st.session_state.ai_analysis, name)
-                audio_path = asyncio.run(
-                    generate_voice(st.session_state.ai_analysis))
-                st.session_state.audio_file = audio_path
-            except Exception as e:
-                logger.warning(f"Ошибка постобработки: {e}")
-
+            # 4. Голос
+            status_info.write("🎙 Синтез речи...")
+            st.session_state.ai_manager.save_report(full_response, name)
+            audio_path = asyncio.run(generate_voice(full_response))
+            st.session_state.audio_file = audio_path
+            
             progress_bar.progress(100)
+            status_info.empty()
+            progress_bar.empty()
+            
             st.success("✅ Анализ готов!")
             st.balloons()
 
-# ==== Вывод результатов ====
+            # Выводим результат сразу после генерации
+            display_results(st.session_state.ai_analysis, st.session_state.audio_file, name)
+
+        except Exception as e:
+            logger.error(f"Ошибка: {e}")
+            st.error(f"Произошла ошибка: {e}")
+
+# ==== Показ сохраненных результатов (при перезагрузке или после завершения анализа) ====
+elif st.session_state.ai_analysis:
+    display_results(st.session_state.ai_analysis, st.session_state.audio_file, name)
+
+st.divider()
+
+# ==== ЧАТ С GEMINI ====
 if st.session_state.ai_analysis:
-    col1, col2 = st.columns([2, 1])
-
-    with col1:
-        st.subheader("📄 Ваш персональный анализ")
-        st.markdown(st.session_state.ai_analysis)
-
-    with col2:
-        st.subheader("📥 Результаты")
-        if st.session_state.audio_file and os.path.exists(st.session_state.audio_file):
-            st.audio(st.session_state.audio_file)
-
-        st.download_button(
-            label="💾 Скачать отчет",
-            data=st.session_state.ai_analysis.encode("utf-8-sig"),
-            file_name=f"PGD_Result_{name}.txt",
-            mime="text/plain",
-        )
-
-    st.divider()
-
-    # ==== ЧАТ С GEMINI ====
     st.subheader("💬 Диалог с вашим профилем")
 
     for msg in st.session_state.chat_history:
@@ -201,32 +195,24 @@ if st.session_state.ai_analysis:
             st.write(msg["content"])
 
     if query := st.chat_input("Задайте уточняющий вопрос..."):
-        st.session_state.chat_history.append(
-            {"role": "user", "content": query})
+        st.session_state.chat_history.append({"role": "user", "content": query})
         with st.chat_message("user"):
             st.write(query)
 
         with st.chat_message("assistant"):
             chat_placeholder = st.empty()
             full_chat_response = ""
-
-            # Контекст для чата: анализ + новый вопрос
             chat_context = (
                 f"Контекст анализа пользователя {name}:\n{st.session_state.ai_analysis}\n\n"
                 f"Вопрос пользователя: {query}"
             )
 
             try:
-                # Передаем is_chat=True для кратких ответов
-                for chunk in st.session_state.ai_manager.get_streaming_response(
-                    chat_context, is_chat=True
-                ):
+                for chunk in st.session_state.ai_manager.get_streaming_response(chat_context, is_chat=True):
                     full_chat_response += chunk
-                    chat_placeholder.markdown(full_chat_response + " ")
+                    chat_placeholder.markdown(full_chat_response + "▌")
 
                 chat_placeholder.markdown(full_chat_response)
-                st.session_state.chat_history.append(
-                    {"role": "assistant", "content": full_chat_response}
-                )
+                st.session_state.chat_history.append({"role": "assistant", "content": full_chat_response})
             except Exception as e:
                 st.error(f"Ошибка чата: {e}")
