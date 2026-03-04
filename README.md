@@ -20,7 +20,7 @@
 
 ## 🛠 Технологии
 
-- **Python 3.12+**
+- **Python 3.11+**
 
 - **Streamlit** (UI Framework)
 
@@ -39,6 +39,7 @@
 
  - 
    <img width="501" height="119" alt="{8D2C7C13-4851-427C-A7DB-23646F38401C}" src="https://github.com/user-attachments/assets/e99cf83d-7678-4fa4-af76-a4ff4c1a6e38" />
+
 
 
 
